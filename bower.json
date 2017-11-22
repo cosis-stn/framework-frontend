@@ -5,7 +5,7 @@
   ],
   "description": "Componente com o conjunto de arquivos padronizados utilizados pela Secretaria do Tesouro Nacional para sistemas internos departamentais",
   "main": "stn-framework-frontend.js",
-  "version":"1.0.0",
+  "version":"1.0.1",
   "moduleType": [],
   "license": "MIT",
   "homepage": "",
