@@ -1,0 +1,19 @@
+{
+  "name": "stn-framework-frontend",
+  "authors": [
+    "Gabriel Reis de Sousa <gabriel.sousa@tesouro.gov.br>"
+  ],
+  "description": "Componente com o conjunto de arquivos padronizados utilizados pela Secretaria do Tesouro Nacional para sistemas internos departamentais",
+  "main": "stn-framework-frontend.js",
+  "version":"1.0.0",
+  "moduleType": [],
+  "license": "MIT",
+  "homepage": "",
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests"
+  ]
+}
