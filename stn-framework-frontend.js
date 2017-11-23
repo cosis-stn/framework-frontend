@@ -1,5 +1,16 @@
 'use strict';
 
+var factories = [
+	{
+		'nome': 'restItemAjudaCampoSvc',
+		'url': '/rest/ItemAjuda/Campo'
+	},
+	{
+		'nome': 'restTelaAjudaTemplateSvc',
+		'url': '/rest/TelaAjuda/Template/:id'
+	}
+	];
+
 //método criado para carregar manualmente o AngularJS
 //Após o carregamento da página o sistema irá redirecionar para a tela de login
 //caso não queira utilizar autenticação, é possóvel manter o bloco, retirando todo o seu conteúdo e mantendo apenas a linha:
@@ -129,49 +140,17 @@ angular.module('stn-framework-frontend',[])
 		objAuth.ajustarPagina = function(escopo){
 			
 			escopo.matrixPermissoes = [];
-		
-			metaFactory['restPermissaoPerfilPorUsuarioSvc'].query(function(data) {		
-				
-				angular.forEach(data, function(value) {
-				
-					if (value.nomeClasse == $route.current.$$route.classeImplementacao
-						&& value.nomePerfil==localStorage.usuarioPerfil) {					
-						permissoesTela[value.nomeMetodo] = value.ativo;
-					}
-				});
-				
-				
-				escopo.matrixPermissoes = permissoesTela;			
-	
-			});
 		};
 		
 		objAuth.prepararChecarAcessoLink = function (escopo) {
 			var acessoLink = [];		
 			var mostrarBuscaAvancada = false;
-			metaFactory['restPermissaoPerfilPorUsuarioSvc'].query(
-				function(data) {
-					angular.forEach($route.routes,function(valueRota) {					
-						angular.forEach(data,function(valuePerm){
-							if (valuePerm.nomeAmigavel == "Busca Avançada")
-								mostrarBuscaAvancada = valuePerm.ativo;
-								
-							if (valuePerm.nomeClasse == valueRota.classeImplementacao
-								&& valuePerm.nomePerfil == localStorage.usuarioPerfil
-								&& valuePerm.ativo == true) {
-								acessoLink[valueRota.originalPath]=true;
-							}
-						});
-					});
-					//solução de contorno parao menu busca avançada não aparecer para quem não é autorizado
-					acessoLink["/Chamado/buscaChamados"]=mostrarBuscaAvancada;
-					escopo.acessoLink = acessoLink;
-				}
-			);
 		}
 		
 		return objAuth;
 	})
+/////////////////////CRUDSERVICE////////////////////////////
+
 	.factory('crudService', function(metaFactory, ngDialog, toastr,  $rootScope, ajudaSvc, $location,utilsSvc) {
 		var _obj = {};
 		var templateDetalhar;
@@ -739,3 +718,383 @@ angular.module('stn-framework-frontend',[])
 		}
    
    })
+   ////////////////////////////DIRETIVAS//////////////////////////////////////////////
+.directive('stnCampoDinamicoEditar', function () {	
+	return {
+		
+		 scope: { obj: '=' },
+ 
+		 compile: function(){			//tElem, tAttrs
+			 return {
+				 pre: function(scope, iElem){//, iAttrs  
+				 
+									 var campoObrigatorio = '';
+					 if (scope.obj.campoCategoria.obrigatorio==true){
+						 campoObrigatorio='required';
+					 }
+				 
+					 if (scope.obj.txValor===undefined){scope.obj.txValor='';}
+					 var strTexto = '<input type=text value="'+scope.obj.txValor+'" mask data-mask="99/99/9999"  minlength='+scope.obj.comprimentoMinimo +' maxlength='+scope.obj.comprimentoMaximo+'  '+campoObrigatorio+' class="form-control  '+scope.obj.mascara.cssMascara+'" id='+scope.obj.id+' />';
+					 var strAreaTexto = '<textarea value="'+scope.obj.txValor+'"   minlength='+scope.obj.comprimentoMinimo +' maxlength='+scope.obj.comprimentoMaximo+'    '+campoObrigatorio+'  class=form-control id='+scope.obj.id+' ></textarea>';
+					 var strNumero = '<input type=number value="'+scope.obj.nrValor+'" minlength='+scope.obj.comprimentoMinimo +' maxlength='+scope.obj.comprimentoMaximo+'   '+campoObrigatorio+'  class=form-control id='+scope.obj.id+' />';					
+					 var strData = '<input type=date value="'+scope.obj.dtValor+'"  '+campoObrigatorio+' class=form-control id='+scope.obj.id+' />';
+										 
+					 
+					 var strTemplate;
+					 
+					 if (scope.obj.campoCategoria.tipoCampo==='T'){
+						 strTemplate= strTexto;
+					 }else if (scope.obj.campoCategoria.tipoCampo==='A'){
+						 strTemplate= strAreaTexto;
+					 }else if (scope.obj.campoCategoria.tipoCampo==='N'){
+						 strTemplate= strNumero;
+					 }else if (scope.obj.campoCategoria.tipoCampo==='D'){
+						 strTemplate= strData;
+					 }else if (scope.obj.campoCategoria.tipoCampo==='S'){
+						 var strCombo = '<select class=form-control ng-required='+scope.obj.obrigatorio+' id='+scope.obj.id+'>' ;
+						 angular.forEach(scope.obj.dominio.split(","),function(value){
+							 strCombo = strCombo + '<option value=' + value.trim() + '>' + value.trim() + '</option>';
+						 });
+						 strTemplate= strCombo;
+					 }else{
+						 strTemplate= strTexto;
+					 }
+					 
+					 iElem[0].innerHTML = strTemplate;
+								 
+				 }
+			 };
+		 }
+	 };
+ })
+ .directive('registroHistorico', function ($filter) {	
+	return {
+		 restrict: 'E',
+		 scope: { registroHistorico: '=' },
+ 
+		 compile: function(){			//tElem, tAttrs 
+			 return {
+				 pre: function(scope, iElem){//, iAttrs										
+ 
+					 if (scope.registroHistorico.logAuditoria.acao!=undefined){						
+						 iElem[0].innerHTML =  '<small><span class="'+$filter('gliphTipoOperacaoHibernate')(scope.registroHistorico.logAuditoria.acao)+'"></span> <i>' + $filter('tipoOperacaoHibernate')(scope.registroHistorico.logAuditoria.acao) +' por ' + scope.registroHistorico.logAuditoria.usuario +' em ' +$filter('date')(scope.registroHistorico.logAuditoria.dtRegistro,'dd/MM/yyyy HH:mm:ss') + '</i></small>';					
+					 } else{
+						 iElem[0].innerHTML =  '<small>Auditoria não disponível. Elemento inserido diretamente no banco de dados.</small>';
+					 }
+				 }
+			 };
+		 }
+	 };
+ })
+ .directive('errSrc', function() {
+   return {
+	 link: function(scope, element, attrs) {
+	   var defaultSrc = attrs.src;
+	   element.bind('error', function() {
+		 if(attrs.errSrc) {
+			 element.attr('src', attrs.errSrc);
+		 }
+		 else if(attrs.src) {
+			 element.attr('src', defaultSrc);
+		 }
+	   });
+	 }
+   }
+ })
+ .directive('autoFocus', function($timeout, $parse) {
+   return {
+	 //scope: true,   // optionally create a child scope
+	 link: function(scope, element, attrs) {
+	   var model = $parse(attrs.autoFocus);
+	   scope.$watch(model, function(value) {        
+		 if(value === true) { 
+		   $timeout(function() {
+			 document.activeElement.blur();			
+			 element[0].focus(); 
+			 
+		   });
+		 }
+	   });
+	   
+	 }
+   };
+ })
+ .directive("stnHelp", function($parse,$route,ajudaSvc) {
+   return {
+	 compile: function(tElm,tAttrs){
+		 var templateFuncao;
+		 var rotulo;
+		 var template;
+		 var textoEl  = tElm[0].innerText;
+		 
+		 if(textoEl.substring(textoEl.length-1,textoEl.length)==":"){
+			 
+			 rotulo = textoEl.substring(0,textoEl.length-1);
+		 } else {
+			 rotulo = textoEl;
+		 }
+				 
+		 template = ajudaSvc.buscarTemplateCorrente();
+		 
+		 //define a ação de acordo com o perfil 
+		 if (localStorage.usuarioPerfil=='Documentador'){						
+			 templateFuncao = 'manterAjuda(\''+tAttrs.stnHelp+'\',\''+template+'\',\''+rotulo+'\')';
+		 }else {			
+			 templateFuncao = 'exibirAjuda(\''+tAttrs.stnHelp+'\',\''+template +'\',\''+rotulo+'\')';
+		 }
+		 
+		 //faz o bind no elemento
+	   var exp = $parse(templateFuncao);
+	   return function (scope,elm){
+		 elm.bind('click',function(){
+		   exp(scope);
+		 });  
+	   };
+	 }
+   };
+ })
+
+ ////////////////FUNCOES COMPARTILHADAS//////////////////////////////////
+
+ .factory('utilsSvc',function(toastr,ngDialog,$http){
+	var _obj = {};
+	var _scope;
+	var _arrArquivos;
+	_obj.mensagem = 'Erro ao realizar operação.';
+	_obj.enumFormato = [{id:'C',valor:'CSV'},{id:'J' ,valor:'JSON'}];
+	_obj.enumFrequencia = [{id:'D',valor:'Diária'},{id:'S' ,valor:'Semanal'},{id:'M' ,valor:'Mensal - Dia específico'},{
+		id:'P' ,valor:'Mensal - Primeiro dia útil do mês'},{id:'U' ,valor:'Mensal - Último dia útil do mês'},{id:'I' ,valor:'Manual'}];
+	_obj.enumDiaSemana	= [
+		{id:1,valor:'Domingo'},{id:2 ,valor:'Segunda-feira'},
+		{id:3 ,valor:'Terça-feira'},{id:4 ,valor:'Quarta-feira'},
+		{id:5 ,valor:'Quinta-feira'},{id:6 ,valor:'Sexta-feira'},{id:7 ,valor:'Sábado'}
+	];
+	_obj.enumMes = [
+		{id:1 ,valor:'Janeiro'},{id:2 ,valor:'Fevereiro'},
+		{id:3 ,valor:'Março'},{id:4 ,valor:'Abril'},
+		{id:5 ,valor:'Maio'},{id:6 ,valor:'Junho'},
+		{id:7 ,valor:'Julho'},{id:8 ,valor:'Agosto'},
+		{id:9 ,valor:'Setembro'},{id:10 ,valor:'Outubro'},
+		{id:11 ,valor:'Novembro'},{id:12 ,valor:'Dezembro'}
+	];
+	
+	_obj.enumTipoParametro = [{id:'I',valor:'Número Inteiro'},{id:'F' ,valor:'Decimal'},{id:'D' ,valor:'Data'},{id:'T' ,valor:'Texto'}];
+	
+
+	
+	//inicializa as funções inserindo-as no $scope
+	_obj.carregarFuncoes = function(escopo) {
+		_scope = escopo;				
+		_arrArquivos = [];
+		
+	};
+
+	//método auxiliar para montar a lista de erros retornada pelo endpoint
+	var montarListaErros = function(body){
+		var retorno = '';
+		if (Array.isArray(body)){					
+			for (var x = 0; x < body.length; x++) {
+				retorno += "<li>";
+				retorno += body[x];
+				retorno += "</li>";						
+			}					
+		} else {
+			retorno = body;
+		}
+		return retorno;
+	}
+	
+	//função genérica para tratamento de resposta utilizando o objeto de resposta tipado
+	_obj.tratarResposta = function(data){			
+		if (data.codigoRetorno===undefined){
+			//Tratamento para o caso do endpoint ainda não utilizar o formato tratado
+			toastr.success('Operação realizada com sucesso.');
+		} else {						
+			if (data.codigoRetorno === 'SUCESSO'){
+				toastr.success(data.mensagem);					
+			} else if (data.codigoRetorno === 'AVISO'){			
+				if (data.body!==undefined){				
+					toastr.warning(montarListaErros(data.body), {allowHtml: true});
+				} else {
+					toastr.warning(data.mensagem);
+				}				
+			} else if (data.codigoRetorno === 'ERRO'){			
+				if (data.body!==undefined){				
+					toastr.error(montarListaErros(data.body),data.mensagem, {allowHtml: true});
+				} else {
+					toastr.error(data.mensagem);
+				}
+			}		
+		}
+	}
+	
+	
+	//função genérica para tratamento de erro do backend de validação
+	_obj.tratarErro = function (data) {		
+		var strErro = "<ol>";
+		if (data.status == 499) {		
+			var x;
+			var timeOut = 5000;
+			
+			for (x = 0; x < data.data.length; x++) {
+				strErro += "<li>"+data.data[x]+"</li>";				
+				timeOut += 1000;
+			}			
+			strErro +="</ol>";
+			toastr.warning(strErro, 'Ocorreram erros de validação', {allowHtml: true, timeOut: timeOut});			
+		}
+		else if (data.status == 498 || data.status == 497) {
+			strErro += "<li>" +data.data+"</li></ol>";			
+			toastr.warning(strErro, 'Ocorreram erros de validação', {allowHtml: true});
+		} else {
+			toastr.error(_obj.mensagem);
+		}
+		ngDialog.closeAll();
+	}
+	
+	_obj.downloadFile = function(httpPath,objParametros) {
+    // Use an arraybuffer
+	
+    $http.post(httpPath,objParametros, { responseType: 'arraybuffer' })
+    .success( function(data, status, headers) {
+
+        var octetStreamMime = 'application/octet-stream';
+        var success = false;
+
+        // Get the headers
+        headers = headers();
+
+        // Get the filename from the x-filename header or default to "download.bin"
+        var filename = headers['x-filename'] || 'download.bin';
+
+        // Determine the content type from the header or default to "application/octet-stream"
+        var contentType = headers['content-type'] || octetStreamMime;
+
+        try
+        {
+            // Try using msSaveBlob if supported
+            //
+            var blob = new Blob([data], { type: contentType });
+            if(navigator.msSaveBlob)
+                navigator.msSaveBlob(blob, filename);
+            else {
+                // Try using other saveBlob implementations, if available
+                var saveBlob = navigator.webkitSaveBlob || navigator.mozSaveBlob || navigator.saveBlob;
+                if(saveBlob === undefined) throw "Not supported";
+                saveBlob(blob, filename);
+            }
+         //   
+            success = true;
+        } catch(ex)
+        {
+          //  
+          //  
+        }
+
+        if(!success)
+        {
+            // Get the blob url creator
+            var urlCreator = window.URL || window.webkitURL || window.mozURL || window.msURL;
+            if(urlCreator)
+            {
+                // Try to use a download link
+                var link = document.createElement('a');
+                if('download' in link)
+                {
+                    // Try to simulate a click
+                    try
+                    {
+                        // Prepare a blob URL
+                   //     
+                        var blob2 = new Blob([data], { type: contentType });
+                        var url2 = urlCreator.createObjectURL(blob2);
+                        link.setAttribute('href', url2);
+
+                        // Set the download attribute (Supported in Chrome 14+ / Firefox 20+)
+                        link.setAttribute("download", filename);
+
+                        // Simulate clicking the download link
+                        var event = document.createEvent('MouseEvents');
+                        event.initMouseEvent('click', true, true, window, 1, 0, 0, 0, 0, false, false, false, false, 0, null);
+                        link.dispatchEvent(event);
+                      //  
+                        success = true;
+
+                    } catch(ex) {
+                  //      
+                   //     
+                    }
+                }
+
+                if(!success)
+                {
+                    // Fallback to window.location method
+                    try
+                    {
+                       
+                        var blob3 = new Blob([data], { type: octetStreamMime });
+                        var url3 = urlCreator.createObjectURL(blob3);
+                        window.location = url3;
+                        
+                        success = true;
+                    } catch(ex) {
+                     
+                    }
+                }
+
+            }
+        }
+
+        if(!success)
+        {
+            // Fallback to window.open method
+			//    
+            window.open(httpPath, '_blank', '');
+        }
+    })
+    
+};
+  
+	
+				
+	//função genérica para upload		
+	_obj.upload = function (files,url) {
+		
+		var mb_file = 25;
+		var max_file = mb_file * 1024 * 1024;
+		
+		if (files && files.length) {
+			for (var i = 0; i < files.length; i++) {
+				var file = files[i];
+				var nomeArquivo = "";
+				
+				// Verifica se o arquivo é maior que o tamanho máximo estipulado.
+				if (file.size <= max_file) {
+					$upload.upload({
+						url: URL_SISTEMA + url,
+						fields: {},
+						file: file,
+						fileName: encodeURIComponent(file.name)
+					}).progress(function (evt) {
+						var progressPercentage = parseInt(100 * evt.loaded / evt.total);
+						_scope.uploading = true;
+						_scope.progresso = progressPercentage;
+						
+						nomeArquivo = evt.config.file.name;
+					}).success(function ( ) {
+						_scope.uploading = false;
+						var objUpload = {'nomeArquivo': nomeArquivo};			
+						
+						toastr.info("Arquivo " + nomeArquivo + " enviado com sucesso.");
+						_scope.file = objUpload;
+					});					
+					
+				} else {
+					toastr.warning('O anexo deve ser menor que ' + mb_file + ' megabytes.');
+				}
+			}
+		}
+	};
+	return _obj;
+})
+ 
