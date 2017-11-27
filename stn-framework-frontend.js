@@ -41,7 +41,7 @@ angular.element(document).ready(function () {
 
 			window.location = URL_SISTEMA + '/';
 		} else {
-			angular.bootstrap(angular.element(document), ['BSTNApp']);
+			angular.bootstrap(angular.element(document), [nomeDoModulo]);
 		}
 	}).fail(function () {
 		window.location = URL_SISTEMA + '/';
